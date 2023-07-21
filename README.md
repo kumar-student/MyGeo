@@ -22,7 +22,6 @@ Additionally, users can update and maintain their profiles, which include thier 
 | email: string             |
 | first_name: string        |
 | last_name: string         |
-| country: string           |
 | address: string           |
 | phone: string             |
 | location: string(pointer) |
@@ -153,7 +152,7 @@ Extending the Django abstract user model allows you to customize the user model 
 In ```'settings.py'``` file add ```'users'``` app name to INSTALLED_APPS
 
 ```python
-# settings.py
+# project/settings.py
 
 INSTALLED_APPS = [
     # ... default django apps
@@ -244,7 +243,7 @@ admin.site.register(User, UserAdmin)
 
 To use this custom user model, you need to inform about it to Django
 ```python
-# settings.py
+# project/settings.py
 
 AUTH_USER_MODEL = 'users.User'
 ```
@@ -332,7 +331,7 @@ pip install -r requirements.txt
 
 Configure the connection to the PostgreSQL and PostGIS spacial database.
 ```shell
-# settings.py
+# project/settings.py
 
 DATABASES = {
     'default': {
@@ -349,7 +348,7 @@ DATABASES = {
 
 In Django, ```django.contrib.gis``` is a built-in Django application that provides geographic information system (GIS) functionalities and tools. Include it in INSTALLED_APPS
 ```shell
-# settings.py
+# project/settings.py
 
 INSTALLED_APPS = [
     # ...
@@ -629,3 +628,117 @@ Create superuser by running this command and fill the details.
 ```shell
 python manage.py createsuperuser
 ``` 
+
+Initial project setup is done with custom user model.
+
+
+## Leaflet integration
+Leaflet is the leading open-source JavaScript library for mobile-friendly interactive maps. Weighing just about 42 KB of JS, it has all the mapping features most developers ever need.
+
+Create two directories ```templates``` and ```static``` in users app directory.
+
+```templates``` directory contains ```index.html``` which shows all user locations.
+
+```static``` directory contains ```index.css``` and ```index.js``` which are used for writing styles and leaflet configuration respectively.
+
+Note: This static directory is different from root static directory.
+
+Tips: Make sure you set STATIC_URL = '/static/' in your settings.py 
+    STATIC_URL = 'static/' serves static files relative to the current page's URL.
+    STATIC_URL = '/static/' serves them from the root of the domain.
+
+Add these lines to your ```users/static/index.css``` file to customize map height
+```css
+/* users/static/index.css */
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+```
+
+Add these lines to your ```users/static/index.js``` file to configure leaflet propeties in index.html
+```js
+// users/static/index.js
+
+const osm = "http://www.openstreetmap.org/copyright";
+const maxZoom = 19;
+const copy = `&copy; <a href='${osm}'>OpenStreetMap</a>`;
+const url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const layer = L.tileLayer(url, {attribution: copy});
+const map = L.map("map", {layers: [layer]});
+```
+
+Add these lines to ```users/templates/index.html``` to show the map.
+```html
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <title>MyGeo</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" type="text/css" href="{% static 'index.css' %}" />
+        <link rel="stylesheet" type="text/css" crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    </head>
+    <body>
+        {{ locations|json_script:"locations-data" }}
+        <div id="map"></div>
+        <script src="{% static 'index.js' %}" defer></script>
+    </body>
+</html>
+```
+
+### Display the map in a web page
+Open ```views.py``` from ```users``` app and add below code to create a template view.
+```python
+# users/views.py
+
+from django.contrib.auth import get_user_model
+from django.views.generic.base import TemplateView
+
+
+User = get_user_model()
+
+class Users(TemplateView):
+    template_name = 'index.html'
+```
+
+Create a ```urls.py``` file inside ```users``` app and asign a path to show the template view.
+```python
+# users/urls.py
+
+from django.urls import path
+
+from users.views import Users
+
+
+app_name = 'users'
+
+urlpatterns = [
+    path('', Users.as_view())
+]
+```
+
+Now open main ```urls.py``` from the project directory and include ```users.urls``` in the urls.
+```python
+# project/urls.py
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('', include('users.urls')),
+    path('admin/', admin.site.urls),
+]
+```
+
+Leaflet integration is completed. You can confirm it by visiting ```localhost:8000``` in your web browser, there you can see a world map on successful integration.

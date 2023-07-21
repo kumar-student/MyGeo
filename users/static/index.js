@@ -7,7 +7,7 @@ const map = L.map("map", {layers: [layer]});
 map.fitWorld();
 const data = document.getElementById("locations-data");
 let feature = L.geoJSON(JSON.parse(data.textContent))
-    .bindPopup(function (layer){
+    .bindPopup(function (layer){    // Add user details to the popup
         const first_name = layer.feature.properties.first_name
         const last_name = layer.feature.properties.last_name
         const address = layer.feature.properties.address
