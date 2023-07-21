@@ -7,7 +7,7 @@ Additionally, users can update and maintain their profiles, which include thier 
 1. Sign up
 2. Sign in
 3. Profile Management
-4. Dashboard
+4. All User Locations
 5. Access Control
 
 ## Use case diagram
